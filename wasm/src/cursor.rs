@@ -33,11 +33,14 @@ impl<'a> Parser<'a> {
     pub fn i(&self)-> usize {
         self.i.get() as _
     }
-    fn read_t<T: Copy + Default>(&self)-> T {
+    pub fn len(&self)-> usize {
+        self.buf.len()
+    }
+    fn read_t<T: Copy>(&self)-> T {
         let size = std::mem::size_of::<T>();
         // 边界检查
-        if size + self.i() >= self.buf.len() {
-            return Default::default();
+        if size + self.i() > self.len() {
+            panic!("边界溢出: i: {}, len: {}. 无法再读取 {} 字节", self.i(), self.len(), size);
         }
 
         self.skip(size);
@@ -73,6 +76,8 @@ macro_rules! impl_gener {
 }
 
 /// 与Parser相反, 可以写入u16, u32(小字端)
+/// 
+/// 其实就是generator
 pub struct Gener {
     buf: Vec<u8>
 }

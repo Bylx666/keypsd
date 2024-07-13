@@ -8,6 +8,11 @@ extern fn alloc(len: usize)-> usize {
     Vec::<u8>::with_capacity(len).leak().as_mut_ptr() as usize
 }
 
+#[export_name = "dealloc"]
+unsafe extern fn dealloc(ptr: *mut u8, len: usize) {
+    Vec::from_raw_parts(ptr, len, len);
+}
+
 const GLOBAL_STR_MAX: usize = 1024;
 struct GlobalStr (Cell<[u8; GLOBAL_STR_MAX]>);
 static GLOBAL_STR: GlobalStr = GlobalStr(Cell::new([0; GLOBAL_STR_MAX]));
