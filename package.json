@@ -1,0 +1,26 @@
+{
+  "name": "keypsd",
+  "version": "1.0.0",
+  "description": "精致快速的PSD解析器和生成器",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test/test.js", 
+    "build": "webpack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bylx666/keypsd.git"
+  },
+  "keywords": [
+    "psd",
+    "parser",
+    "rust",
+    "wasm"
+  ],
+  "author": "Subkey",
+  "license": "MPL-2.0",
+  "bugs": {
+    "url": "https://github.com/Bylx666/keypsd/issues"
+  },
+  "homepage": "https://github.com/Bylx666/keypsd#readme"
+}

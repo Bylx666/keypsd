@@ -1,6 +1,6 @@
 const wasm = require("../wasm");
 const { Gener } = require("../cursor");
-const { log } = require("console");
+const { log } = console;
 
 /*
     `channel.js`向`toRgbaRaw`传参内存布局: 
@@ -23,9 +23,9 @@ const { log } = require("console");
     dataLen |   | `data`        | 该channel的数据
 */
 
-module.exports = async (parser, layers)=> {
+module.exports = (parser, layers)=> {
     // 获取wasm
-    let { memory, alloc, dealloc, getLayerRgba } = await wasm.get();
+    let { memory, alloc, dealloc, getLayerRgba } = wasm.get();
 
     for (let layer of layers) {
         let { width, height, channels } = layer;
@@ -67,7 +67,8 @@ module.exports = async (parser, layers)=> {
         let rgbaPtr = getLayerRgba(ptr);
 
         // 把结果数据复制出来并清理这片内存
-        layer.image = new Uint8Array(memory.buffer, rgbaPtr, width * height).slice();
-        dealloc(rgbaPtr, width * height);
+        let size = width * height * 4;
+        layer.image = new Uint8Array(memory.buffer, rgbaPtr, size).slice();
+        dealloc(rgbaPtr, size);
     }
 };

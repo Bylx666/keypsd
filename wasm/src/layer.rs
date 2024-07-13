@@ -7,7 +7,7 @@ struct LayerChannel {
 
 /// js在rust中分配空间后写入被解析的数据, 由此函数拿回所有权
 /// 
-/// 此后该函数将返回值的数据生命周期延长出该函数, 并由js执行width*height长度的dealloc
+/// 此后该函数将返回值的数据生命周期延长出该函数, 并由js执行`width*height*4`长度的dealloc
 #[export_name = "getLayerRgba"]
 extern fn get_layer_rgba(ptr: *mut u32)-> *mut u8 {
     use crate::cursor::{ Parser, Gener };

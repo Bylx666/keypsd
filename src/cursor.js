@@ -62,7 +62,7 @@ class Gener {
     }
     go(n) {
         this.i += n;
-        if (this.i >= this.buf.byteLength) {
+        while (this.i >= this.buf.byteLength) {
             let old = this.buf;
             this.buf = new Uint8Array(old.byteLength * 2);
             this.view = new DataView(this.buf.buffer);

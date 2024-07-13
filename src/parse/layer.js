@@ -79,17 +79,17 @@ function parseRecord(parser) {
     let name = parser.str(pad4(parser.u8() + 1) - 1);
 
     // 解析Additional info
-    let extra = {};
-    while (parser.i < extraEnd) 
-        Object.assign(extra, parseExtra(parser));
-    parser.skipTo(extraEnd);
-    if (extra.name) name = extra.name;
-    return {
-        top, left, width, height, name, blendMode, opacity, channels, extra
+    let layer = {
+        top, left, width, height, name, blendMode, opacity, channels
     };
+    while (parser.i < extraEnd) 
+        Object.assign(layer, parseExtra(parser));
+    parser.skipTo(extraEnd);
+    
+    return layer;
 }
 
-module.exports = async (parser)=> {
+module.exports = (parser)=> {
     let size = parser.u32();
     let end = parser.i + size;
 
@@ -101,7 +101,7 @@ module.exports = async (parser)=> {
         layers[i] = parseRecord(parser);
     
     // 解析图层图像
-    await parseChannels(parser, layers);
+    parseChannels(parser, layers);
 
     parser.skipTo(end);
     return layers;

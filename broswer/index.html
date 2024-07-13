@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>PSD解析和生成</title>
+    <script src="./main.js"></script>
+    <style>
+        #layer-list {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        #layer-list > div {
+            margin: 10px;
+            border-right: 1px #aaa solid;
+        }
+        #layer-list > div > canvas {
+            width: 200px;
+            height: 200px;
+            object-fit: contain;
+            image-rendering: crisp-edges;
+        }
+        #layer-list > div > p {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <h2>解析PSD</h2>
+    <input type="file" name="input-file" id="file" accept=".psd">
+    <div id="layer-list"></div>
+    <script>
+        // 初始化psd和wasm
+        psd.wasm.init(fetch("./release.wasm"));
+        
+        // 绑定上传事件
+        let $file = document.getElementById("file");
+        let $list = document.getElementById("layer-list");
+        $file.onchange = async ()=> {
+            let buf = await $file.files[0].arrayBuffer();
+            $list.textContent = "";
+            let file = psd.parse(buf);
+            console.log(file);
+
+            // 读取layers并显示在layer-list元素
+            for (let layer of file.layers) {
+                // 创建元素
+                let $div = document.createElement("div");
+                $list.append($div);
+                // 显示图层名
+                let $p = document.createElement("p");
+                $p.textContent = layer.name;
+                $div.append($p);
+                
+                if (!layer.width || !layer.height) continue;
+                // 读取图层图像
+                let $cv = document.createElement("canvas");
+                $div.append($cv);
+                [ $cv.width, $cv.height ] = [file.width, file.height];
+                let cx = $cv.getContext("2d");
+                let data = cx.createImageData(layer.width, layer.height);
+                data.data.set(layer.image);
+                cx.putImageData(data, layer.left, layer.top);
+            }
+        }
+    </script>
+</body>
+</html>

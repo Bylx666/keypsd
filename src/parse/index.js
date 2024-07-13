@@ -2,7 +2,7 @@ const { Parser } = require("../cursor");
 const parseHeader = require("./header");
 const parseLayers = require("./layer");
 
-async function parse(buf) {
+function parse(buf) {
     let file = new Parser(buf, true);
     let psd = parseHeader(file);
 
@@ -12,12 +12,13 @@ async function parse(buf) {
     file.skip(file.u32());
 
     // 解析图层
-    psd.layers = await parseLayers(file);
+    psd.layers = parseLayers(file);
+    return psd;
 }
 
 async function parse_url(path) {
     let buf = await (await fetch(path)).arrayBuffer();
-    return await parse(buf);
+    return parse(buf);
 }
 
 module.exports = {
