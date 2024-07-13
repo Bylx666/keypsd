@@ -1,7 +1,6 @@
 const { Parser } = require("../cursor");
 const parseHeader = require("./header");
 const parseLayers = require("./layer");
-const parseChannels = require("./channel");
 
 async function parse(buf) {
     let file = new Parser(buf, true);
@@ -13,10 +12,7 @@ async function parse(buf) {
     file.skip(file.u32());
 
     // 解析图层
-    psd.layers = parseLayers(file);
-
-    // 解析图层图像
-    await parseChannels(file, psd.layers);
+    psd.layers = await parseLayers(file);
 }
 
 async function parse_url(path) {

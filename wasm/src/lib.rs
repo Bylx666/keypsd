@@ -8,7 +8,7 @@ extern fn alloc(len: usize)-> usize {
     Vec::<u8>::with_capacity(len).leak().as_mut_ptr() as usize
 }
 
-const GLOBAL_STR_MAX: usize = 256;
+const GLOBAL_STR_MAX: usize = 1024;
 struct GlobalStr (Cell<[u8; GLOBAL_STR_MAX]>);
 static GLOBAL_STR: GlobalStr = GlobalStr(Cell::new([0; GLOBAL_STR_MAX]));
 
@@ -40,5 +40,13 @@ fn log(s: &str) {
         GLOBAL_STR.0.set(res);
         log(bytes.len());
     }
+}
+
+#[allow(unused)]
+#[macro_export]
+macro_rules! log {
+    ($($a: expr $(,)?)*) => {
+        $crate::log(&format!($($a ,)*));
+    };
 }
 

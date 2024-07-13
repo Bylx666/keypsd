@@ -1,3 +1,5 @@
+const parseChannels = require("./layer_channel");
+
 const BLEND_MODES_TO_CSS = {
     "norm": "normal",
     "dark": "darken", 
@@ -59,7 +61,8 @@ function parseRecord(parser) {
     for (let i = 0; i < channelCount; ++i) 
         channels[i] = {
             id: parser.i16(), 
-            length: parser.u32()
+            // channel图像数据的大小不应包含这个压缩码还是扫描行长度, 无从考证
+            dataLen: parser.u32() - 2
         };
     parser.skip(4);
     let blendMode = BLEND_MODES_TO_CSS[parser.str(4).trim()];
@@ -86,7 +89,7 @@ function parseRecord(parser) {
     };
 }
 
-module.exports = (parser)=> {
+module.exports = async (parser)=> {
     let size = parser.u32();
     let end = parser.i + size;
 
@@ -96,6 +99,10 @@ module.exports = (parser)=> {
     let layers = new Array(count);
     for (let i = 0; i < count; ++i) 
         layers[i] = parseRecord(parser);
+    
+    // 解析图层图像
+    await parseChannels(parser, layers);
+
     parser.skipTo(end);
     return layers;
 };
