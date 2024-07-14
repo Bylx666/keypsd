@@ -29,15 +29,13 @@
     <input type="file" name="input-file" id="file" accept=".psd">
     <div id="layer-list"></div>
     <script>
-        // 初始化psd和wasm
-        psd.wasm.init(fetch("./release.wasm"));
-        
         // 绑定上传事件
         let $file = document.getElementById("file");
         let $list = document.getElementById("layer-list");
         $file.onchange = async ()=> {
             let buf = await $file.files[0].arrayBuffer();
             $list.textContent = "";
+            // 使用psd.parse
             let file = psd.parse(buf);
             console.log(file);
 

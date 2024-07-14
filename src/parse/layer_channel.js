@@ -1,74 +1,59 @@
-const wasm = require("../wasm");
-const { Gener } = require("../cursor");
+const { Gener, Parser } = require("../cursor");
 const { log } = console;
 
-/*
-    `channel.js`向`toRgbaRaw`传参内存布局: 
+function getLayerRgba(parser, layer) {
+    let { width, height, channels } = layer;
+    let size = width * height;
+    let rgba = new Uint8Array(size * 4);
 
-    file: 
-    bytes | is unsigned | name | description
-    ----|---|--------------|--
-    4   | u | `totalSize`  | 总数据大小
-    4   | u | `width`      | 图层宽度
-    4   | u | `height`     | 图层高度
-    2   | u | `channelCnt` | 通道数量
-    var |   | for `channel` in `channelCnt` | channelCnt个channel
+    for (let channel of channels) {
+        // 不处理无图像的图层, 蒙版和Zip图像数据
+        let compression = parser.u16();
+        if (!channel.dataLen || channel.id < -1 || compression > 1) continue;
 
-    channel: 
-    bytes | is unsigned | name | description
-    --------|---|---------------|--
-    1       |   | `id`          | 一个数字: rgb-> 123, a-> -1
-    1       | u | `compression` | 压缩方式: 0-> 未压缩, 1-> RLE压缩
-    32      | u | `dataLen`     | 数据大小
-    dataLen |   | `data`        | 该channel的数据
-*/
+        // 读取data
+        let data = parser.read(channel.dataLen);
+        if (compression === 1) data = decodeRLE(data, width, height);
+        if (data.byteLength !== size) 
+            console.warn(`'${ layer.name }'图层的'${ channel.id }'通道数据损坏`);
+        
+        // 获取rgba对应的偏移
+        switch (channel.id) {
+            case -1: 
+                var offset = 3; break;
+            case 0: case 1: case 2: 
+                var offset = channel.id; break;
+            default: continue;
+        }
+
+        // 写入rgba
+        for (let i = 0; i < size; ++i) 
+            rgba[i * 4 + offset] = data[i];
+    }
+
+    return rgba;
+}
+
+function decodeRLE(data, width, height) {
+    let dataLen = data.byteLength;
+    let parser = new Parser(data.buffer);
+    let gener = new Gener(width * height);
+
+    // 跳过channel image data前面标识扫描行大小的数据
+    parser.skip(height * 2);
+    while (parser.i < dataLen) {
+        let len = parser.i8();
+        if (len >= 0) 
+            gener.write(parser.read(1 + len));
+        else if (len !== -128) {
+            let byte = parser.u8();
+            gener.write(new Uint8Array(1 - len).fill(byte));
+        }
+    }
+    return gener.export();
+}
 
 module.exports = (parser, layers)=> {
-    // 获取wasm
-    let { memory, alloc, dealloc, getLayerRgba } = wasm.get();
-
-    for (let layer of layers) {
-        let { width, height, channels } = layer;
-
-        // 准备给rust传参
-        let raw = new Gener(128, true);
-        // 留4格存总数居大小
-        raw.go(4);
-        // 写入宽高
-        raw.u32(width);
-        raw.u32(height);
-
-        // 保留2位写入实际通道数量
-        let channelCount = 0;
-        let channelCountIndex = raw.i;
-        raw.u16(0);
-
-        for (let channel of channels) {
-            // 不处理无图像的图层, 蒙版和Zip图像数据
-            let compression = parser.u16();
-            if (!channel.dataLen || channel.id < -1 || compression > 1) continue;
-
-            channelCount += 1;
-            let data = parser.read(channel.dataLen);
-            raw.i8(channel.id);
-            raw.u8(compression);
-            raw.u32(data.byteLength);
-            raw.write(data);
-        }
-        // 在开头写入总数居大小
-        raw.view.setUint32(0, raw.i, true);
-        // 写入通道数量
-        raw.view.setUint16(channelCountIndex, channelCount, true);
-
-        // 分配空间并传入rust
-        let arg = raw.export();
-        let ptr = alloc(arg.byteLength);
-        new Uint8Array(memory.buffer, ptr).set(arg);
-        let rgbaPtr = getLayerRgba(ptr);
-
-        // 把结果数据复制出来并清理这片内存
-        let size = width * height * 4;
-        layer.image = new Uint8Array(memory.buffer, rgbaPtr, size).slice();
-        dealloc(rgbaPtr, size);
-    }
+    for (let layer of layers) 
+        layer.image = getLayerRgba(parser, layer);
 };
