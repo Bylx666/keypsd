@@ -29,6 +29,14 @@ class Parser {
         this.i += 4;
         return this.view.getInt32(this.i - 4, le);
     }
+    f32(le) {
+        this.i += 4;
+        return this.view.getFloat32(this.i - 4, le);
+    }
+    f64(le) {
+        this.i += 8;
+        return this.view.getFloat64(this.i - 8, le);
+    }
     skip(n) {
         this.i += n;
     }
@@ -42,9 +50,9 @@ class Parser {
     str(n) {
         return this.decoder.decode(this.read(n));
     }
-    utf16be(n) {
-        // 调换字节顺序
-        let buf = this.read(n * 2);
+    unicode() {
+        // 读取字节长度并调换字节顺序
+        let buf = this.read(this.u32() * 2);
         for (let i = 0; i < buf.byteLength; i += 2) 
             [ buf[i], buf[i + 1] ] = [buf[i + 1], buf[i]];
         return String.fromCodePoint.apply(null, 

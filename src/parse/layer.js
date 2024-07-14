@@ -1,4 +1,6 @@
 const parseChannels = require("./layer_channel");
+const parseDescriptor = require("./descriptor");
+const { parseEngineData } = require("./text");
 
 const BLEND_MODES_TO_CSS = {
     "norm": "normal",
@@ -27,19 +29,33 @@ let { log } = console;
 function parseExtra(parser) {
     const fns = {
         // name
-        luni() {
-            let unitLen = parser.u32();
-            return { name: parser.utf16be(unitLen) };
-        },
+        luni() { return { name: parser.unicode() }; },
         // id, psd好像各图层id一样, 误导性好强
-        // lyid() {
-        //     parser.skip(4);
-        //     return { id: parser.u32() };
-        // },
+        lyid() {
+            parser.skip(4);
+            return { id: parser.u32() };
+        },
         // 组
-        lsct() {
-            let t = parser.u32();
-            return { folder: t === 3? "close": "open" };
+        lsct() { return { folder: parser.u32() === 3? "close": "open" }; }, 
+        // 文本图层
+        TySh() {
+            parser.skip(2);
+
+            let transform = new Float64Array(6);
+            for (let i = 0; i < 6; ++i) transform[i] = parser.f64();
+
+            parser.skip(6);
+            let raw = parseDescriptor(parser);
+            let chars = parseEngineData(raw.EngineData);
+
+            // 跳过wrap段
+            parser.skip(6);
+            parseDescriptor(parser);
+
+            return { text: {
+                transform, raw, chars
+                // 文本信息的坐标文档中未明确数据类型, 不采用
+            } };
         }
     };
 
@@ -104,5 +120,5 @@ module.exports = (parser)=> {
     parseChannels(parser, layers);
 
     parser.skipTo(end);
-    return layers;
+    return layers.reverse();
 };
