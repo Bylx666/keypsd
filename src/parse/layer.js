@@ -53,7 +53,7 @@ function parseExtra(parser) {
             parseDescriptor(parser);
 
             return { text: {
-                transform, raw, chars
+                transform, raw, chars, text: chars.text
                 // 文本信息的坐标文档中未明确数据类型, 不采用
             } };
         }

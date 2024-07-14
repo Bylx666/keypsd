@@ -180,7 +180,7 @@ function parseEngineData(data) {
     // https://developer.mozilla.org/zh-CN/docs/Web/API/Window/queryLocalFonts
     let fonts = data.ResourceDict.FontSet.map(o=> o.Name);
 
-    return Array.from(text).map((char, i)=> {
+    let arr = Array.from(text).map((char, i)=> {
         // 获取style
         for (var styleI = 0; styleI < styles.length; ) {
             i -= stylesMap[styleI];
@@ -194,7 +194,6 @@ function parseEngineData(data) {
 
         return {
             char, 
-            text, 
             color, 
             font: fonts[style.Font], 
             size: style.FontSize, 
@@ -203,6 +202,8 @@ function parseEngineData(data) {
             italic: !!style.FauxItalic
         };
     });
+    arr.text = text;
+    return arr;
 }
 
 module.exports = {
