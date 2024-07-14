@@ -188,11 +188,14 @@ function parseEngineData(data) {
             styleI += 1;
         }
         let style = styles[styleI].StyleSheet.StyleSheetData;
+        let color = style.FillColor.Values.map(n=> 0 | (n * 255));
+        // 将alpha放在最后
+        color.push(color.shift());
 
         return {
             char, 
             text, 
-            color: style.FillColor.Values.map(n=> 0 | (n * 255)), 
+            color, 
             font: fonts[style.Font], 
             size: style.FontSize, 
             underline: !!style.Underline, 

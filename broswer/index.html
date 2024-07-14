@@ -57,18 +57,17 @@
                 [ $cv.width, $cv.height ] = [file.width, file.height];
                 let cx = $cv.getContext("2d");
 
-                let { left, top } = layer;
                 if (layer.text) {
                     // 绘制文本
                     let transform = layer.text.transform;
-                    let l = left, t = top;
+                    let l = 0, t = 0;
 
                     for (let { 
                         char, font, size, color, bold, italic
                     } of layer.text.chars) {
                         // 处理换行
                         if (char === "\n") {
-                            l = left;
+                            l = 0;
                             t += size * 1.5;
                             continue;
                         }
@@ -77,13 +76,13 @@
                         cx.fillStyle = `rgba(${color[0]} ${color[1]} ${color[2]})`;
                         cx.setTransform(...transform);
                         cx.fillText(char, l, t);
-                        l += cx.measureText(char);
+                        l += cx.measureText(char).width;
                     }
                 }else {
                     // 写入图像数据
                     let data = cx.createImageData(layer.width, layer.height);
                     data.data.set(layer.image);
-                    cx.putImageData(data, left, top);
+                    cx.putImageData(data, layer.left, layer.top);
                 }
             }
         }
