@@ -61,12 +61,11 @@ class Parser {
 }
 
 class Gener {
-    constructor(capacity = 1, targetLE = true) {
+    constructor(capacity = 1) {
         this.buf = new Uint8Array(capacity);
         this.view = new DataView(this.buf.buffer);
         this.i = 0;
         this.encoder = new TextEncoder();
-        this.le = targetLE;
     }
     go(n) {
         this.i += n;
@@ -87,19 +86,19 @@ class Gener {
     }
     u16(n) {
         this.go(2);
-        this.view.setUint16(this.i - 2, n, this.le);
+        this.view.setUint16(this.i - 2, n);
     }
     i16(n) {
         this.go(2);
-        this.view.setInt16(this.i - 2, n, this.le);
+        this.view.setInt16(this.i - 2, n);
     }
     u32(n) {
         this.go(4);
-        this.view.setUint32(this.i - 4, n, this.le);
+        this.view.setUint32(this.i - 4, n);
     }
     i32(n) {
         this.go(4);
-        this.view.setInt32(this.i - 4, n, this.le);
+        this.view.setInt32(this.i - 4, n);
     }
     write(write) {
         this.go(write.byteLength);
@@ -108,6 +107,22 @@ class Gener {
     }
     str(str) {
         return this.write(this.encoder.encode(str));
+    }
+    unicode(str) {
+        this.u32(str.length);
+        let arr = new Uint16Array(str.length);
+        for (let i = 0; i < str.length; ++i) arr[i] = str[i];
+        this.write(arr);
+    }
+    markSize() {
+        let that = this;
+        that.go(4);
+        let i = that.i;
+        return { i, end() {
+            let len = that.i - i;
+            that.view.setUint32(i - 4, len);
+            return len;
+        } }
     }
     export() {
         return this.buf.subarray(0, this.i);

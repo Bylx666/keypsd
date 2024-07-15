@@ -24,7 +24,6 @@ const BLEND_MODES_TO_CSS = {
 
 let pad2 = (n)=> (n + 1) & ~1;
 let pad4 = (n)=> (n + 3) & ~3;
-let { log } = console;
 
 function parseExtra(parser) {
     const fns = {
@@ -61,6 +60,7 @@ function parseExtra(parser) {
 
     parser.skip(4);
     let key = parser.str(4);
+    console.log(key)
     let len = parser.u32();
     let end = parser.i + len;
     let result = fns[key]? fns[key](): null;

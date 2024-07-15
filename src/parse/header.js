@@ -3,7 +3,7 @@ const COLOR_MODE = {
 };
 
 let assert = (expr, message)=> {
-    if (!expr) throw new Error(message? message: "文件头解析错误")
+    if (!expr) throw new Error(message)
 };
 module.exports = (parser)=> {
     assert(parser.str(4) === "8BPS");

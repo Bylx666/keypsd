@@ -14,8 +14,10 @@
             border-right: 1px #aaa solid;
         }
         #layer-list > div > canvas {
-            width: 200px;
-            height: 200px;
+            position: absolute;
+            left: 0; top: 0;
+            width: 500px;
+            height: 500px;
             object-fit: contain;
             image-rendering: crisp-edges;
         }
@@ -40,6 +42,7 @@
             console.log(file);
 
             // 读取layers并显示在layer-list元素
+            file.layers.reverse()
             for (let layer of file.layers) {
                 // 创建元素
                 let $div = document.createElement("div");
@@ -76,6 +79,7 @@
                         cx.fillStyle = `rgba(${color[0]} ${color[1]} ${color[2]})`;
                         cx.setTransform(...transform);
                         cx.fillText(char, l, t);
+                        console.log(char, l, t, transform);
                         l += cx.measureText(char).width;
                     }
                 }else {

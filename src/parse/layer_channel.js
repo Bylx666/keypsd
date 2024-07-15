@@ -1,5 +1,4 @@
 const { Gener, Parser } = require("../cursor");
-const { log } = console;
 
 function getLayerRgba(parser, layer) {
     let { width, height, channels } = layer;
