@@ -1,8 +1,8 @@
 // https://www.adobe.com/devnet-apps/photoshop/fileformatashtml
 
-const gener = require("./gener");
-const { parse, parse_url } = require("./parse");
+const { gener, generFrom } = require("./gener");
+const { parse, parseUrl } = require("./parse");
 
 module.exports = {
-    parse, parse_url, gener
+    parse, parseUrl, gener, generFrom
 };

@@ -1,3 +1,5 @@
+/// PSD文件头解析
+
 const COLOR_MODE = {
     3: "RGB"
 };

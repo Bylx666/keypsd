@@ -1,3 +1,5 @@
+/// WASM模块接口, 已废弃
+
 const initObj = {
     console: {
         log(len) {

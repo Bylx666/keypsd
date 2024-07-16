@@ -1,4 +1,6 @@
-const { Gener, Parser } = require("../cursor");
+/// PSD 图层图像数据转RGBA图像数据实现
+
+const { decode } = require("../rle");
 
 function getLayerRgba(parser, layer) {
     let { width, height, channels } = layer;
@@ -12,7 +14,8 @@ function getLayerRgba(parser, layer) {
 
         // 读取data
         let data = parser.read(channel.dataLen);
-        if (compression === 1) data = decodeRLE(data, width, height);
+        // RLE解压要跳过channel image data前面标识扫描行大小的数据
+        if (compression === 1) data = decode(data.subarray(height * 2), size);
         if (data.byteLength !== size) 
             console.warn(`'${ layer.name }'图层的'${ channel.id }'通道数据损坏`);
         
@@ -31,25 +34,6 @@ function getLayerRgba(parser, layer) {
     }
 
     return rgba;
-}
-
-function decodeRLE(data, width, height) {
-    let dataLen = data.byteLength;
-    let parser = new Parser(data.buffer);
-    let gener = new Gener(width * height);
-
-    // 跳过channel image data前面标识扫描行大小的数据
-    parser.skip(height * 2);
-    while (parser.i < dataLen) {
-        let len = parser.i8();
-        if (len >= 0) 
-            gener.write(parser.read(1 + len));
-        else if (len !== -128) {
-            let byte = parser.u8();
-            gener.write(new Uint8Array(1 - len).fill(byte));
-        }
-    }
-    return gener.export();
 }
 
 module.exports = (parser, layers)=> {

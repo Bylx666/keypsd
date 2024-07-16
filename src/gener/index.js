@@ -1,7 +1,10 @@
+/// PSD生成 主模块
+
 const { Gener } = require("../cursor");
 const genLayer = require("./layer");
+const { encode0s } = require("../rle");
 
-module.exports = (psd)=> {
+function gener(psd) {
     let gener = new Gener(4095);
     gener.psd = psd;
 
@@ -18,15 +21,16 @@ module.exports = (psd)=> {
     // color mode data 和 image resource
     gener.u32(0);
 
-    // gener.u32(0);
-    let buf = require("fs").readFileSync("./test/image-resource.bin").buffer;
-    gener.u32(buf.byteLength);
-    gener.write(new Uint8Array(buf));
+    gener.u32(0);
 
     genLayer(gener);
 
     gener.u16(0);
-    gener.write(new Uint8Array(psd.width * psd.height * 3));
+    gener.write(new Uint8Array(psd.width * psd.height * 4));
     
     return gener.export();
 };
+
+function generFrom() {}
+
+module.exports = { gener, generFrom };

@@ -1,3 +1,6 @@
+/// PSD图层数据生成实现
+
+const { encode } = require("../rle");
 
 const BLEND_MODES_TO_PSD = {
     "normal": "norm",
@@ -18,7 +21,7 @@ const BLEND_MODES_TO_PSD = {
     "luminosity": "lum "
 };
 
-function genExtra(gener) {
+function genExtra(gener, { name, folder }) {
     let sizeExtra = gener.markSize();
     gener.u32(0);
 
@@ -26,37 +29,51 @@ function genExtra(gener) {
     for (let i = 0; i < 10; ++i) gener.u32(65535);
     sizeBlendingRanges.end();
 
-    gener.u8(2);
+    gener.u8(3);
     gener.str("art");
-    let buf = require("fs").readFileSync("./test/layer-addition.bin");
-    gener.write(new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength));
+    
+    // 写入additional info
+    if (name) writeAddition(gener, "luni", ()=> gener.unicode(name));
+    if (folder) writeAddition(gener, "lsct", ()=> gener.u32(folder === "close"? 3: 1));
+
     sizeExtra.end();
+}
+
+function writeAddition(gener, key, writeFunc) {
+    gener.str("8BIM");
+    gener.str(key);
+    let size = gener.markSize();
+    writeFunc();
+    size.end();
 }
 
 function genRecord(gener, layer) {
     // coords
-    let { left, top, width, height } = layer;
+    let { left, top, width, height, image, blendMode, opacity, visible, name } = layer;
     gener.u32(top);
     gener.u32(left);
-    gener.u32(left + width);
     gener.u32(top + height);
+    gener.u32(left + width);
 
     // channels
-    gener.u16(4);
-    for (let i = -1; i < 3; ++i) {
-        gener.i16(i);
-        gener.u32(3);
-    }
+    if (image && image.byteLength) {
+        if (image.byteLength !== width * height * 4) 
+            throw new Error(`'${name}'图层图像大小错误`);
+        gener.u16(4);
+        // 空出位置, 等channel data写入后从此处写入实际channel数据大小
+        layer.channelMetaIndex = gener.i;
+        gener.go(24);
+    }else gener.u16(0);
 
     // blend mode
     gener.str("8BIM");
-    gener.str("norm");
-    gener.u8(128);
+    gener.str(BLEND_MODES_TO_PSD[blendMode] || "norm");
+    gener.u8(typeof opacity === "number"? opacity: 255);
     gener.u8(0);
-    gener.u8(3);
+    gener.u8(visible === false? 10: 8);
     gener.u8(0);
 
-    genExtra(gener);
+    genExtra(gener, layer);
 }
 
 function genGlobalMask(gener) {
@@ -69,18 +86,46 @@ function genGlobalMask(gener) {
     sizeGlobalMask.end();
 }
 
+function genChannel(gener, { image, channelMetaIndex, height, width }) {
+    if (!image || !image.byteLength) return;
+
+    let len = image.byteLength / 4;
+    for (let i = 0; i < 4; ++i) {
+        let channelData = new Uint8Array(len);
+        let offset = (i + 3) % 4;
+        for (let j = 0; j < len; ++j) 
+            channelData[j] = image[j * 4 + offset];
+        // 进行rle压缩
+        gener.u16(1);
+        // PSD要求每行数据单独压缩并将单行长度写在开头
+        let scanLineIndex = gener.i;
+        gener.go(height * 2);
+        // 表示rle压缩的2字节数字1也属于数据长度一部分
+        let dataLen = height * 2 + 2;
+        for (let i = 0; i < height; ++i) {
+            let rle = encode(channelData.subarray(i * width, (i + 1) * width));
+            gener.view.setUint16(scanLineIndex + i * 2, rle.byteLength);
+            dataLen += rle.byteLength;
+            gener.write(rle);
+        }
+        // 在record部分记录的channel data处写入实际channel大小
+        gener.view.setInt16(channelMetaIndex + i * 6, i - 1);
+        gener.view.setUint32(channelMetaIndex + i * 6 + 2, dataLen);
+    }
+}
+
 module.exports = (gener)=> {
     let sizeLayerMaskSection = gener.markSize();
-    // TODO: pad2
     let sizeLayerInfo = gener.markSize();
-    gener.i16(1);
-    genRecord(gener, { width: 1, height: 1, left: 0, top: 0 });
+
+    let layers = gener.psd.layers;
+    gener.i16(-layers.length);
+    for (let layer of layers) 
+        genRecord(gener, layer);
 
     // channel image
-    new Uint8Array([255, 255, 0, 0]).forEach(n=> {
-        gener.u16(0);
-        gener.u8(n);
-    });
+    for (let layer of layers) 
+        genChannel(gener, layer);
     sizeLayerInfo.end();
 
     // global mask

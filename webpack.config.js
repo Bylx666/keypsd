@@ -3,9 +3,10 @@ const path = require("path");
 module.exports = {
     mode: "production", 
     output: {
-        path: path.resolve(__dirname, "./broswer/"), 
+        path: path.resolve(__dirname, "./broswer"), 
+        filename: "keypsd.js", 
         library: {
-            name: "psd", 
+            name: "keypsd", 
             type: "assign"
         }
     }

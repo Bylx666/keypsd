@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>PSD解析和生成</title>
-    <script src="./main.js"></script>
+    <script src="./keypsd.js"></script>
     <style>
         #layer-list {
             display: flex;
@@ -37,13 +37,12 @@
         $file.onchange = async ()=> {
             let buf = await $file.files[0].arrayBuffer();
             $list.textContent = "";
-            // 使用psd.parse
-            let file = psd.parse(buf);
-            console.log(file);
+            // 使用keypsd.parse
+            let psd = keypsd.parse(buf);
+            console.log(psd);
 
             // 读取layers并显示在layer-list元素
-            file.layers.reverse()
-            for (let layer of file.layers) {
+            for (let layer of psd.layers) {
                 // 创建元素
                 let $div = document.createElement("div");
                 $list.append($div);
@@ -57,7 +56,7 @@
                 // 读取图层图像
                 let $cv = document.createElement("canvas");
                 $div.append($cv);
-                [ $cv.width, $cv.height ] = [file.width, file.height];
+                [ $cv.width, $cv.height ] = [psd.width, psd.height];
                 let cx = $cv.getContext("2d");
 
                 if (layer.text) {

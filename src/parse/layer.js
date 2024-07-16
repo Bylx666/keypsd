@@ -1,3 +1,5 @@
+/// PSD图层解析实现
+
 const parseChannels = require("./layer_channel");
 const parseDescriptor = require("./descriptor");
 const { parseEngineData } = require("./text");
@@ -22,7 +24,6 @@ const BLEND_MODES_TO_CSS = {
 };
 
 
-let pad2 = (n)=> (n + 1) & ~1;
 let pad4 = (n)=> (n + 3) & ~3;
 
 function parseExtra(parser) {
@@ -60,7 +61,6 @@ function parseExtra(parser) {
 
     parser.skip(4);
     let key = parser.str(4);
-    console.log(key)
     let len = parser.u32();
     let end = parser.i + len;
     let result = fns[key]? fns[key](): null;
@@ -84,7 +84,9 @@ function parseRecord(parser) {
     let blendMode = BLEND_MODES_TO_CSS[parser.str(4).trim()];
     if (!blendMode) blendMode = "normal";
     let opacity = parser.u8();
-    parser.skip(3);
+    parser.skip(1);
+    let visible = !(parser.u8() & 2);
+    parser.skip(1);
 
     let extraSize = parser.u32();
     let extraEnd = parser.i + extraSize;
@@ -96,7 +98,7 @@ function parseRecord(parser) {
 
     // 解析Additional info
     let layer = {
-        top, left, width, height, name, blendMode, opacity, channels
+        top, left, width, height, name, visible, blendMode, opacity, channels
     };
     while (parser.i < extraEnd) 
         Object.assign(layer, parseExtra(parser));
@@ -120,5 +122,5 @@ module.exports = (parser)=> {
     parseChannels(parser, layers);
 
     parser.skipTo(end);
-    return layers.reverse();
+    return layers;
 };

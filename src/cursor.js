@@ -1,7 +1,9 @@
+/// 二进制解析器和生成器实现
+
 class Parser {
-    constructor(buffer) {
-        this.buf = new Uint8Array(buffer);
-        this.view = new DataView(buffer);
+    constructor(buf) {
+        this.buf = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+        this.view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
         this.i = 0;
         this.decoder = new TextDecoder();
     }
@@ -42,6 +44,9 @@ class Parser {
     }
     skipTo(n) {
         this.i = n;
+    }
+    isEnded() {
+        return this.i >= this.buf.byteLength;
     }
     read(n) {
         this.i += n;
@@ -110,9 +115,9 @@ class Gener {
     }
     unicode(str) {
         this.u32(str.length);
-        let arr = new Uint16Array(str.length);
-        for (let i = 0; i < str.length; ++i) arr[i] = str[i];
-        this.write(arr);
+        let arr = new DataView(new ArrayBuffer(str.length * 2));
+        for (let i = 0; i < str.length; ++i) arr.setUint16(i * 2, str.charCodeAt(i));
+        this.write(new Uint8Array(arr.buffer));
     }
     markSize() {
         let that = this;

@@ -1,4 +1,6 @@
+/// PSD图层文本数据解析实现
 
+// 该函数实现在: 
 // https://github.com/Agamnentzar/ag-psd/blob/master/src/engineData.ts
 function decodeEngineData(data) {
     function isWhitespace(char) {
@@ -194,7 +196,7 @@ function parseEngineData(data) {
 
         return {
             char, 
-            color, 
+            color: new Uint8Array(color), 
             font: fonts[style.Font], 
             size: style.FontSize, 
             underline: !!style.Underline, 

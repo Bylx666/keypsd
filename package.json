@@ -4,18 +4,18 @@
   "description": "精致快速的PSD解析器和生成器",
   "main": "index.js",
   "scripts": {
-    "test": "node test/test.js", 
+    "test": "node src/test/test.js",
     "build": "webpack"
   },
+  "types": "index.d.ts", 
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Bylx666/keypsd.git"
   },
   "keywords": [
     "psd",
-    "parser",
-    "rust",
-    "wasm"
+    "parser", 
+    "lite"
   ],
   "author": "Subkey",
   "license": "MPL-2.0",

@@ -1,3 +1,4 @@
+/// PSD文档单元Descriptor解析
 
 const DESCRIPTOR_MAP = {
     TEXT: (parser)=> parser.unicode(), 

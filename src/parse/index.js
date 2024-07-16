@@ -1,9 +1,12 @@
+/// PSD解析 主模块
+
 const { Parser } = require("../cursor");
 const parseHeader = require("./header");
 const parseLayers = require("./layer");
 
 function parse(buf) {
-    let file = new Parser(buf, true);
+    if (buf instanceof ArrayBuffer) buf = new Uint8Array(buf);
+    let file = new Parser(buf);
     let psd = parseHeader(file);
 
     // 跳过Color Mode Data
@@ -16,11 +19,11 @@ function parse(buf) {
     return psd;
 }
 
-async function parse_url(path) {
+async function parseUrl(path) {
     let buf = await (await fetch(path)).arrayBuffer();
     return parse(buf);
 }
 
 module.exports = {
-    parse, parse_url
+    parse, parseUrl
 };
