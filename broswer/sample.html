@@ -15,10 +15,8 @@
         let $parseResult = document.getElementById("parse-result");
         let $download = document.getElementById("download");
         $upload.onchange = async ()=> {
-            // 先将文件转为`arrayBuffer`
-            let buf = await $upload.files[0].arrayBuffer();
             // 使用全局对象`keypsd`解析该文件
-            let psd = keypsd.parse(buf);
+            let psd = await keypsd.parseFrom($upload.files[0]);
             console.log(psd);
             $parseResult.textContent = JSON.stringify(
                 psd, 

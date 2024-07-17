@@ -8,7 +8,7 @@ let assert = (expr, message)=> {
     if (!expr) throw new Error(message)
 };
 module.exports = (parser)=> {
-    assert(parser.str(4) === "8BPS");
+    assert(parser.str(4) === "8BPS", "无效PSD文件");
     parser.skip(8);
     let channels = parser.u16();
     let height = parser.u32();

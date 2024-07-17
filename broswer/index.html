@@ -8,10 +8,10 @@
         #layer-list {
             display: flex;
             flex-wrap: wrap;
+            position: relative;
         }
         #layer-list > div {
-            margin: 10px;
-            border-right: 1px #aaa solid;
+            margin-left: 520px;
         }
         #layer-list > div > canvas {
             position: absolute;
@@ -22,7 +22,8 @@
             image-rendering: crisp-edges;
         }
         #layer-list > div > p {
-            margin: 0;
+            margin: 10px;
+            border-bottom: 1px solid;
         }
     </style>
 </head>
@@ -31,26 +32,42 @@
     <input type="file" name="input-file" id="file" accept=".psd">
     <div id="layer-list"></div>
     <script>
-        // 绑定上传事件
-        let $file = document.getElementById("file");
-        let $list = document.getElementById("layer-list");
-        $file.onchange = async ()=> {
-            let buf = await $file.files[0].arrayBuffer();
-            $list.textContent = "";
-            // 使用keypsd.parse
-            let psd = keypsd.parse(buf);
-            console.log(psd);
+        // 为canvas2d context绘制文本
+        function drawText(cx, text) {
+            let transform = text.transform;
+            let l = 0, t = 0;
 
-            // 读取layers并显示在layer-list元素
+            for (let { 
+                char, font, size, color, bold, italic
+            } of text.chars) {
+                // 处理换行
+                if (char === "\n") {
+                    l = 0;
+                    t += size;
+                    continue;
+                }
+                cx.font = (italic? "italic ": "") + (bold? "bold ": "")
+                    +`${size}px ${font}`;
+                cx.fillStyle = `rgba(${color[0]} ${color[1]} ${color[2]})`;
+                cx.setTransform(...transform);
+                cx.fillText(char, l, t);
+                l += cx.measureText(char).width;
+            }
+        }
+
+        // 绘制图层并显示
+        function renderLayers(psd) {
             for (let layer of psd.layers) {
                 // 创建元素
                 let $div = document.createElement("div");
                 $list.append($div);
+                
                 // 显示图层名
                 let $p = document.createElement("p");
                 $p.textContent = layer.name;
                 $div.append($p);
                 
+                // 不要处理宽或高为0的图层
                 if (!layer.width || !layer.height) continue;
 
                 // 读取图层图像
@@ -59,35 +76,28 @@
                 [ $cv.width, $cv.height ] = [psd.width, psd.height];
                 let cx = $cv.getContext("2d");
 
-                if (layer.text) {
-                    // 绘制文本
-                    let transform = layer.text.transform;
-                    let l = 0, t = 0;
-
-                    for (let { 
-                        char, font, size, color, bold, italic
-                    } of layer.text.chars) {
-                        // 处理换行
-                        if (char === "\n") {
-                            l = 0;
-                            t += size * 1.5;
-                            continue;
-                        }
-                        cx.font = (italic? "italic ": "") + (bold? "bold ": "")
-                            +`${size}px ${font}`;
-                        cx.fillStyle = `rgba(${color[0]} ${color[1]} ${color[2]})`;
-                        cx.setTransform(...transform);
-                        cx.fillText(char, l, t);
-                        console.log(char, l, t, transform);
-                        l += cx.measureText(char).width;
-                    }
-                }else {
+                // 绘制文本
+                if (layer.text) drawText(cx, layer.text);
+                else {
                     // 写入图像数据
                     let data = cx.createImageData(layer.width, layer.height);
                     data.data.set(layer.image);
                     cx.putImageData(data, layer.left, layer.top);
                 }
             }
+        }
+
+        // 绑定上传事件
+        let $file = document.getElementById("file");
+        let $list = document.getElementById("layer-list");
+        $file.onchange = async ()=> {
+            $list.textContent = "";
+            // 使用keypsd.parseFrom, 传入Blob类型
+            let psd = await keypsd.parseFrom($file.files[0]);
+            console.log(psd);
+
+            // 读取layers并显示在layer-list元素
+            renderLayers(psd);
         }
     </script>
 </body>

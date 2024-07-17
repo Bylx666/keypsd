@@ -126,8 +126,17 @@ namespace Parser {
     }
 }
 
+/**
+ * 解析一个PSD文件
+ * @param buf 可以是Uint8Array或ArrayBuffer
+ */
 export declare function parse(buf: Uint8Array | Buffer | ArrayBuffer): Parser.PSD;
-export declare function parse_url(url: string): Promise<Parser.PSD>;
+
+/**
+ * 从网络fetch PSD文件并解析
+ * @param url 网络链接, 将传进fetch的第一个参数
+ */
+export declare async function parseUrl(url: string): Promise<Parser.PSD>;
 
 namespace Gener {
     declare interface PSD {
@@ -137,10 +146,20 @@ namespace Gener {
     }
     
     declare interface Layer {
-        left: number, 
-        top: number, 
-        width: number, 
-        height: number, 
+        left?: number = 0, 
+        top?: number = 0, 
+        /**
+         * 若不提供width则自动使用父元素宽度
+         * 
+         * `image`的大小仍需保证是`width * height * 4`
+         */
+        width?: number, 
+        /**
+         * 若不提供height则自动使用父元素高度
+         * 
+         * `image`的大小仍需保证是`width * height * 4`
+         */
+        height?: number, 
         name?: string = "layer", 
         visible?: boolean = true, 
         blendMode?: CSSBlendMode = "normal", 
@@ -154,7 +173,7 @@ namespace Gener {
         /**
          * RGBA数据, 长度必须为`layer.width * layer.height * 4`
          */
-        image?: Uint8Array, 
+        image?: Uint8Array | Uint8ClampedArray, 
         /**
          * 文本图层独有的属性, 包含了每个字符的样式
          */
@@ -162,4 +181,51 @@ namespace Gener {
     }
 }
 
+/**
+ * 通过一个PSD对象生成PSD文件
+ * 
+ * 最小的psd对象可以是: 
+ * 
+ * ```js
+ * let psd = { width: 16, height: 16, layers: [] };
+ * keypsd.gener(psd);
+ * ```
+ * 
+ * 你也可以传入一个图像数据(通常由`canvas.getContext("2d").getImageData(..)`得到)直接将其转为psd: 
+ * 
+ * ```js
+ * ...
+ * let data = context.getImageData(0, 0, 16, 16).data;
+ * let psd = { width: 16, height: 16, layers: [{
+ *     name: "新图层",
+ *     image: data
+ * }] };
+ * keypsd.gener(psd);
+ * ```
+ * 
+ * 对于图层对象, 除了`name`和`image`, 你还可以指定: 
+ * 
+ * - left, top: 用于定位图层, 一个有符号整数. 默认值是`0`. 
+ * - width, height: 必须是正整数, 且`image`的大小必须是`width * height * 4`. 默认值是psd对象下的`width`和`height`. 
+ * - visible: 布尔值, 表示是否隐藏图层(对应图层栏左侧的小眼睛按钮). 默认是 `true`. 
+ * - blendMode: 字符串, 必须是CSS [`mix-blend-mode`](https://developer.mozilla.org/zh-CN/docs/Web/CSS/mix-blend-mode) 的16个属性中的一个. 
+ * - opacity: `0 ~ 255`之间的整数之一(包括`0`和`255`), 代表图层的透明度. 默认是 `255`. 
+ * - folder: 必须是"open"或者"close", 代表新图层组和关闭图层组. 就像XML一样, 一个图层组需要两个带有`folder`标志的图层来表示图层组的包含关系, 支持嵌套. 默认值是`undefined`. 
+ * 
+ * @param psd psd对象
+ */
 export declare function gener(psd: Gener.PSD): Uint8Array;
+
+/**
+ * 从一个数据**作为图片**生成PSD文件. 
+ * 
+ * 支持以下类型: 
+ * 
+ * - `string`: 将其作为链接, `fetch`资源作为图片生成PSD文件. 
+ * - `Uint8Array` | `Blob`: 将其作为图像, 解析并生成PSD文件. 
+ * - `HTMLImageElement`: 为该图像生成PSD文件(写入`src`即可传入, 不需要等待`onload`). 
+ * - `HTMLCanvasElement`: 将该画布的图像作为数据源, 生成PSD文件. 
+ * 
+ * @param src 数据源
+ */
+export declare async function generFrom(src: string | Uint8Array | Blob | HTMLImageElement | HTMLCanvasElement): Promise<Uint8Array>;

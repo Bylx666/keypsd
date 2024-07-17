@@ -49,15 +49,18 @@ function writeAddition(gener, key, writeFunc) {
 
 function genRecord(gener, layer) {
     // coords
-    let { left, top, width, height, image, blendMode, opacity, visible, name } = layer;
-    gener.u32(top);
-    gener.u32(left);
-    gener.u32(top + height);
-    gener.u32(left + width);
+    let { image, blendMode, opacity, visible, name } = layer;
+    layer.width = layer.width || gener.psd.width;
+    layer.height = layer.height || gener.psd.height;
+    [ layer.left, layer.top ] = [layer.left || 0, layer.top || 0];
+    gener.u32(layer.top);
+    gener.u32(layer.left);
+    gener.u32(layer.top + layer.height);
+    gener.u32(layer.left + layer.width);
 
     // channels
     if (image && image.byteLength) {
-        if (image.byteLength !== width * height * 4) 
+        if (image.byteLength !== layer.width * layer.height * 4) 
             throw new Error(`'${name}'图层图像大小错误`);
         gener.u16(4);
         // 空出位置, 等channel data写入后从此处写入实际channel数据大小

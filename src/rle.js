@@ -111,18 +111,21 @@ const encode = (data)=> _encode(new Parser(data), new Gener(data.byteLength));
  * 
  * 减少一次内存分配开销
  * 
- * @param {number} n 
+ * @param {number} n 正整数
  */
 function encode0s(n) {
-    let i = 0;
-    let fakeParser = {
-        isEnded: ()=> i < n, 
-        u8() {
-            i += 1;
-            return 0;
-        }
+    let gener = new Gener(0 | (n / 64) + 4);
+    let group128 = 0 | (n / 128);
+    let left = n % 128;
+    while (group128--) {
+        gener.i8(-127);
+        gener.u8(0);
     };
-    return _encode(fakeParser, new Gener(0 | (n / 64)));
+    if (left) {
+        gener.i8(left - 1);
+        gener.go(left);
+    }
+    return gener.export();
 }
 
 module.exports = { decode, encode, encode0s };
