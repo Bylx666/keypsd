@@ -22,5 +22,9 @@
   "bugs": {
     "url": "https://github.com/Bylx666/keypsd/issues"
   },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
   "homepage": "https://github.com/Bylx666/keypsd#readme"
 }
