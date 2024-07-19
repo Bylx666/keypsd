@@ -167,8 +167,9 @@ function decodeEngineData(data) {
     return root;
 }
 
-function parseEngineData(data) {
+module.exports = (data)=> {
     data = decodeEngineData(data);
+    // console.dir(data, {depth:null});
 
     let {
         Editor: { Text: text }, 
@@ -208,6 +209,3 @@ function parseEngineData(data) {
     return arr;
 }
 
-module.exports = {
-    parseEngineData
-};

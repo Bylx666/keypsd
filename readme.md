@@ -9,15 +9,21 @@
 - 绘制图层(正常图层)和文本图层之外类型的图层
 - 蒙版
 
+本文档开篇列举了基本API的使用示例, 若你希望直接阅读`PSD`的解析结果来考虑该框架的解析能力是否适合你的需求, 请直接跳至[数据](#数据). 
+
 ## 图层顺序
 
 你需要特别注意, 解析得到的图层的顺序, 在Photoshop的图层栏中是**从下向上**排列的. 
 
-如果你需要从上向下渲染图层, 则为`layers`属性调用[`Array.prototype.reverse()`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array/reverse)方法. 
+如果你需要从上向下渲染图层, 则为图层列表`layers`属性调用[`Array.prototype.reverse()`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array/reverse)方法. 
 
 ## 使用
 
 `keypsd`共提供了`4`个方法供使用: `parse`, `parseFrom`, `gener`, `generFrom`. 
+
+- `parse`: 传入`ArrayBuffer`或`Uint8Array`, 将其作为`PSD`数据进行解析. 
+- `gener`: 传入存有`PSD`数据的对象, 返回`Uint8Array`作为生成的`PSD`文件. `gener`是`generate`的缩写. 
+- `parseFrom`, `generFrom`: `parse`和`gener`的**异步**版本, 支持多种格式(见下文). 
 
 其中`parseFrom`和`generFrom`只支持浏览器端. 
 
@@ -65,15 +71,21 @@ writeFileSync("./src/test/write.psd", gened);
     <a id="download" href="#">下载生成的新PSD</a>
     <script src="./keypsd.js"></script>
     <script>
-        // 为上传按钮绑定事件
+        // 先获取元素
+        // 上传按钮
         let $upload = document.getElementById("upload");
+        // 解析结果显示处
         let $parseResult = document.getElementById("parse-result");
+        // 生成的PSD的下载键
         let $download = document.getElementById("download");
+
+        // 为上传按钮绑定事件
         $upload.onchange = async ()=> {
-            // 使用全局对象`keypsd`解析该文件
+            // 使用全局对象`keypsd`的异步函数`parseFrom`解析该文件
             let psd = await keypsd.parseFrom($upload.files[0]);
+            // 打印解析结果
             console.log(psd);
-            // 将Uint8Array显示为`Buffer(length)`
+            // 将Uint8Array显示为`Buffer(length)`并显示在`parseResult`元素上
             $parseResult.textContent = JSON.stringify(
                 psd, 
                 (_, v)=> v instanceof Uint8Array? `Buffer(${v.byteLength})`: v,
@@ -102,7 +114,10 @@ writeFileSync("./src/test/write.psd", gened);
 `keypsd`会将字符串作为链接进行`fetch`, 并将结果作为`PSD`文件解析. 
 
 ```js
-keypsd.parseFrom("./test.psd").then(r=> console.log(r));
+// 获取该链接指向的PSD文件并解析为PSD对象
+keypsd.parseFrom("./test.psd")
+    // 我们直接将解析结果打印出来
+    .then(r=> console.log(r));
 ```
 
 2. 二进制资源
@@ -114,6 +129,7 @@ keypsd.parseFrom("./test.psd").then(r=> console.log(r));
 而`File`类型继承了`Blob`, 可以直接作为`generFrom`的参数. 因此我认为该调用方式对于文件拖拽和文件上传实现十分实用. 
 
 ```html
+<!-- 绑定文件上传事件 -->
 <input type="file" onchange="upload()" accept=".psd">
 <script>
     async function upload() {
@@ -134,7 +150,10 @@ keypsd.parseFrom("./test.psd").then(r=> console.log(r));
 `keypsd`会将字符串作为链接进行`fetch()`, 并将其结果作为**图片**转化为PSD文件. 
 
 ```js
-keypsd.generFrom("./test.jpg").then(r=> console.log(keypsd.parse(r)));
+// 获取该链接指向的图片并为其生成PSD文件
+keypsd.generFrom("./test.jpg")
+    // 解析生成的PSD文件并将解析结果打印出来
+    .then(r=> console.log(keypsd.parse(r)));
 ```
 
 2. 图像: 
@@ -143,12 +162,17 @@ keypsd.generFrom("./test.jpg").then(r=> console.log(keypsd.parse(r)));
 
 值得注意的是你并不需要等待`Image`的`onload`, 只要其`src`设置正确即可. 
 
-由于`PSD`数据来源自`canvas`, 而跨域`Image`会导致`canvas`无法导出图像数据, 因此不允许该图像跨域. 
+由于`PSD`数据来源自`canvas`, 而大部分跨域`Image`会导致`canvas`无法导出图像数据, 因此对图像链接存在跨域限制. 详情见[MDN: 画布污染](https://developer.mozilla.org/zh-CN/docs/Web/HTML/CORS_enabled_image). 
 
 ```js
+// 创建新的Image元素
 let img = new Image();
+// 指定图像链接(存在跨域限制)
 img.src = "./test.jpg";
-keypsd.generFrom(img).then(r=> console.log(keypsd.parse(r)));
+// 无需等待img.onload, 直接传入generFrom
+keypsd.generFrom(img)
+    // 将生成的PSD文件解析并打印
+    .then(r=> console.log(keypsd.parse(r)));
 ```
 
 3. 二进制资源: 
@@ -161,14 +185,30 @@ keypsd.generFrom(img).then(r=> console.log(keypsd.parse(r)));
 
 ```js
 fetch("./test.jpg")
+    // 将fetch结果作为Blob
     .then(response=> response.blob())
+    // 解析该Blob对象表达的PSD文件
     .then(blob=> keypsd.generFrom(blob))
+    // 为了测试生成的文件的可用性, 将其传入parse再次解析
     .then(r=> console.log(keypsd.parse(r)));
 ```
 
 4. Canvas
 
 直接将`Canvas`元素的图像作为图层生成PSD文件. 
+
+```html
+<canvas width="40" height="40" id="cv"></canvas>
+<script>
+    let cv = document.getElementById("cv");
+    // 在画布上写点东西
+    cv.getContext("2d").fillText("2333", 0, 20);
+    // 直接将其传入generFrom
+    keypsd.generFrom(cv)
+        // 解析生成的PSD并打印
+        .then(r=> console.log(keypsd.parse(r)));
+</script>
+```
 
 ## 数据
 
@@ -361,14 +401,17 @@ let psd = { width: 16, height: 16, layers: [{
 keypsd.gener(psd);
 ```
 
+- `name`: 字符串, 代表图层名称. 
+- `image`: `image`的长度必须是**图层**的`width * height * 4`. 如果未指定图层的`width`和`height`, 将缺省为`PSD`文件本身的`width`和`height`. 
+
 对于图层对象, 除了`name`和`image`, 你还可以指定: 
 
-- left, top: 用于定位图层, 一个有符号整数. 默认值是`0`. 
-- width, height: 必须是正整数, 且`image`的大小必须是`width * height * 4`. 默认值是psd对象下的`width`和`height`. 
-- visible: 布尔值, 表示是否隐藏图层(对应图层栏左侧的小眼睛按钮). 默认是 `true`. 
-- blendMode: 字符串, 必须是CSS [`mix-blend-mode`](https://developer.mozilla.org/zh-CN/docs/Web/CSS/mix-blend-mode) 的16个属性中的一个. 
-- opacity: `0 ~ 255`之间的整数之一(包括`0`和`255`), 代表图层的透明度. 默认是 `255`. 
-- folder: 必须是"open"或者"close", 代表新图层组和关闭图层组. 就像XML一样, 一个图层组需要两个带有`folder`标志的图层来表示图层组的包含关系, 支持嵌套. 默认值是`undefined`. 
+- `left`和`top`: 用于定位图层, 一个有符号整数. 默认值是`0`. 
+- `width`和`height`: 图层自身的大小. 必须是正整数. 默认值是PSD文件本身的`width`和`height`. 
+- `visible`: 布尔值, 表示是否隐藏图层(对应图层栏左侧的小眼睛按钮). 默认是 `true`. 
+- `blendMode`: 字符串, 必须是CSS [`mix-blend-mode`](https://developer.mozilla.org/zh-CN/docs/Web/CSS/mix-blend-mode) 的16个属性中的一个. 
+- `opacity`: `0 ~ 255`之间的整数之一(包括`0`和`255`), 代表图层的透明度. 默认是 `255`. 
+- `folder`: 必须是"open"或者"close", 代表新图层组和关闭图层组. 就像XML一样, 一个图层组需要两个带有`folder`标志的图层来表示图层组的包含关系, 支持嵌套. 默认值是`undefined`. 
 
 ## 运行 编译
 

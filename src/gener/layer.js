@@ -1,6 +1,7 @@
 /// PSD图层数据生成实现
 
 const { encode } = require("../rle");
+const generText = require("./text");
 
 const BLEND_MODES_TO_PSD = {
     "normal": "norm",
@@ -21,7 +22,7 @@ const BLEND_MODES_TO_PSD = {
     "luminosity": "lum "
 };
 
-function genExtra(gener, { name, folder }) {
+function genExtra(gener, { name, folder, text, left, top, height }) {
     let sizeExtra = gener.markSize();
     gener.u32(0);
 
@@ -35,7 +36,8 @@ function genExtra(gener, { name, folder }) {
     // 写入additional info
     if (name) writeAddition(gener, "luni", ()=> gener.unicode(name));
     if (folder) writeAddition(gener, "lsct", ()=> gener.u32(folder === "close"? 3: 1));
-
+    if (text) writeAddition(gener, "TySh", ()=> 
+        generText(gener, text.chars, left, top + height));
     sizeExtra.end();
 }
 

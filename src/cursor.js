@@ -89,9 +89,9 @@ class Gener {
         this.go(1);
         this.view.setInt8(this.i - 1, n);
     }
-    u16(n) {
+    u16(n, le) {
         this.go(2);
-        this.view.setUint16(this.i - 2, n);
+        this.view.setUint16(this.i - 2, n, le);
     }
     i16(n) {
         this.go(2);
@@ -104,6 +104,10 @@ class Gener {
     i32(n) {
         this.go(4);
         this.view.setInt32(this.i - 4, n);
+    }
+    f64(n) {
+        this.go(8);
+        this.view.setFloat64(this.i - 8, n);
     }
     write(write) {
         this.go(write.byteLength);

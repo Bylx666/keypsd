@@ -1,3 +1,5 @@
+/// generFrom
+
 const gener = require("./gener");
 
 async function str(src) {

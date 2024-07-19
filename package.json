@@ -2,12 +2,12 @@
   "name": "keypsd",
   "version": "1.0.0",
   "description": "精致快速的PSD解析器和生成器",
-  "main": "index.js",
+  "main": "src/index",
   "scripts": {
     "test": "node src/test/test.js",
     "build": "webpack"
   },
-  "types": "index.d.ts", 
+  "types": "src/index", 
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Bylx666/keypsd.git"
@@ -23,7 +23,7 @@
     "url": "https://github.com/Bylx666/keypsd/issues"
   },
   "publishConfig": {
-    "registry": "https://registry.npmjs.org/",
+    "registry": "https://registry.npmjs.com/",
     "access": "public"
   },
   "homepage": "https://github.com/Bylx666/keypsd#readme"

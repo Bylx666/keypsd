@@ -21,11 +21,11 @@ let readId = (parser)=> parser.str(parser.u32() || 4);
 
 function parseDescriptor(parser) {
     let name = parser.unicode();
-    let cls = parser.str(parser.u32() || 4);
+    let cls = readId(parser);
     let itemLen = parser.u32();
     let descriptor = { name, cls };
     for (let i = 0; i < itemLen; ++i) {
-        let key = parser.str(parser.u32() || 4).trim();
+        let key = readId(parser).trim();
         let typ = parser.str(4);
         descriptor[key] = DESCRIPTOR_MAP[typ](parser);
     }

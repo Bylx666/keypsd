@@ -2,7 +2,7 @@
 
 const parseChannels = require("./layer_channel");
 const parseDescriptor = require("./descriptor");
-const { parseEngineData } = require("./text");
+const parseEngineData = require("./text");
 
 const BLEND_MODES_TO_CSS = {
     "norm": "normal",
