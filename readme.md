@@ -385,11 +385,15 @@ fetch("./test.jpg")
 最小的psd对象可以是: 
 
 ```js
-let psd = { width: 16, height: 16, layers: [] };
+let psd = { width: 16, height: 16, layers: [ {} ] };
 keypsd.gener(psd);
 ```
 
-你也可以传入一个图像数据(通常由`canvas.getContext("2d").getImageData(..)`得到)直接将其转为psd: 
+`layers`的数组中至少需要一个对象, 如果写成`layers: []`的话, Photoshop是不认这个文件的. 
+
+#### 图层图像
+
+你可以传入一个图像数据(通常由`canvas.getContext("2d").getImageData(..)`得到)直接将其转为psd: 
 
 ```js
 ...
@@ -412,6 +416,59 @@ keypsd.gener(psd);
 - `blendMode`: 字符串, 必须是CSS [`mix-blend-mode`](https://developer.mozilla.org/zh-CN/docs/Web/CSS/mix-blend-mode) 的16个属性中的一个. 
 - `opacity`: `0 ~ 255`之间的整数之一(包括`0`和`255`), 代表图层的透明度. 默认是 `255`. 
 - `folder`: 必须是"open"或者"close", 代表新图层组和关闭图层组. 就像XML一样, 一个图层组需要两个带有`folder`标志的图层来表示图层组的包含关系, 支持嵌套. 默认值是`undefined`. 
+- `text`: 文本图层信息. 需要一个`chars`属性. 见下文`text`属性的使用说明. 
+
+#### `text`属性
+
+目前可以使用`text`属性来创建一个文本图层: 
+
+```js
+let psd = { width: 16, height: 16, layers: [{
+    name: "原神",
+    text: { chars: [
+        {
+            char: "原", 
+            size: 15
+        }, {
+            char: "神", 
+            size: 12
+        }
+    ] }
+}] };
+keypsd.gener(psd);
+```
+
+`chars`数组中的成员类型介绍: 
+
+- `char`: 单个字符`(string)`. 不允许有多个字符出现在`char`属性中. 不可省略. 
+- `color`: `[R, G, B, A]`颜色`(Array(4) | Uint8Array(4))`, 数字范围`0~255`. 只读取`Red`, `Green`和`Blue`. `Alpha`将被忽略. 默认为`[0, 0, 0, 255]`. 
+- `size`: 字体大小. 正数, 可以是浮点数`(number)`, 和CSS的`font-size`的比例一致. 默认`16`. 
+- `underline`: 是否有下划线`(boolean)`. 默认`false`. 
+- `bold`: 是否粗体`(boolean)`. 默认`false`. 
+- `italic`: 是否斜体`(boolean)`. 默认`false`. 
+
+你如果并不打算给每个字符单独安排样式, 可以参考以下实现: 
+
+```js
+// 要传入的字符串
+const MY_STR = "原神\n启动!";
+let textpsd = { width: 32, height: 32, layers: [{
+    name: "原神の图层",
+    // 将该字符串迭代为每个字符组成数组, 并为每个字符包装成字符对象
+    text: { chars: Array.from(MY_STR).map(char=> ({
+        // 字符
+        char, 
+        // 以下颜色示例为黄色rgb(200 200 100)
+        // alpha干脆不填也没事
+        color: [200, 200, 100], 
+        // 字体大小
+        size: 8, 
+        // 加粗
+        bold: true
+    })) }
+}] };
+let gened = keypsd.gener(textpsd);
+```
 
 ## 运行 编译
 

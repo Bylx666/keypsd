@@ -22,7 +22,7 @@ const BLEND_MODES_TO_PSD = {
     "luminosity": "lum "
 };
 
-function genExtra(gener, { name, folder, text, left, top, height }) {
+function genExtra(gener, { name, folder, text, left, top }) {
     let sizeExtra = gener.markSize();
     gener.u32(0);
 
@@ -37,7 +37,7 @@ function genExtra(gener, { name, folder, text, left, top, height }) {
     if (name) writeAddition(gener, "luni", ()=> gener.unicode(name));
     if (folder) writeAddition(gener, "lsct", ()=> gener.u32(folder === "close"? 3: 1));
     if (text) writeAddition(gener, "TySh", ()=> 
-        generText(gener, text.chars, left, top + height));
+        generText(gener, text.chars, left, top));
     sizeExtra.end();
 }
 

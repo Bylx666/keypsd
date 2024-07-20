@@ -25,6 +25,17 @@ declare enum FolderOption {
     Open = "open", 
     Close = "close"
 }
+    
+interface TextInfo<Char> {
+    transform: TransformMatrix, 
+    /**
+     * 文本的杂项信息, 可靠但不实用
+     */
+    raw: Object, 
+    chars: Char[]
+}
+
+type TransformMatrix = Float64Array & { byteLength: 6 };
 
 namespace Parser {
     interface Layer {
@@ -60,7 +71,7 @@ namespace Parser {
         /**
          * 文本图层独有的属性, 包含了每个字符的样式
          */
-        text?: TextInfo, 
+        text?: TextInfo<TextInfoChar>, 
     }
     
     interface ChannelMetaData {
@@ -75,19 +86,11 @@ namespace Parser {
         Blue = 2
     }
     
-    interface TextInfo {
-        transform: TransformMatrix, 
-        /**
-         * 文本的杂项信息, 可靠但不实用
-         */
-        raw: Object, 
-        chars: []
-    }
-    
-    type TransformMatrix = Float64Array & { byteLength: 6 };
-    
     interface TextInfoChar {
-        char: 'a',
+        /**
+         * 单个字符
+         */
+        char: string,
         /**
          * `[R, G, B, A]`颜色, 数字范围`0~255`
          */
@@ -97,11 +100,11 @@ namespace Parser {
          * 
          * 可能需要[`queryLocalFonts`](https://developer.mozilla.org/zh-CN/docs/Web/API/Window/queryLocalFonts)函数来辅助转换
          */
-        font: 'MicrosoftJhengHeiUIRegular', 
+        font: string, 
         /**
-         * 字体大小, 可用于`font-size`
+         * 字体大小, 可用于`font-size`, 可能是浮点数
          */
-        size: 16, 
+        size: number, 
         /**
          * 是否有下划线
          */
@@ -177,7 +180,46 @@ namespace Gener {
         /**
          * 文本图层独有的属性, 包含了每个字符的样式
          */
-        // text?: TextInfo, 
+        text?: TextInfo<TextInfoChar>, 
+    }
+    
+    interface TextInfoChar {
+        /**
+         * 单个字符. 
+         */
+        char: string,
+        /**
+         * `[R, G, B, A]`颜色, 数字范围`0~255`
+         * 
+         * 只读取`Red`, `Green`和`Blue`. `Alpha`将被忽略.
+         * 
+         * 缺省值为`[0, 0, 0, 255]`
+         */
+        color?: Iterable<Uint8>,
+        /**
+         * !暂未实装!
+         * 
+         * 该位置需要的是`Postscript`字体名称, 和`font-family`的值并不同. 
+         * 
+         * 可能需要[`queryLocalFonts`](https://developer.mozilla.org/zh-CN/docs/Web/API/Window/queryLocalFonts)函数来辅助转换. 
+         */
+        font?: string, 
+        /**
+         * 字体大小, 和`font-size`的比例一致, 可以是浮点数. 
+         */
+        size?: number = 16, 
+        /**
+         * 是否有下划线
+         */
+        underline?: boolean = false,
+        /**
+         * 是否粗体
+         */
+        bold?: boolean = false,
+        /**
+         * 是否斜体
+         */
+        italic?: boolean = false
     }
 }
 
@@ -187,7 +229,7 @@ namespace Gener {
  * 最小的psd对象可以是: 
  * 
  * ```js
- * let psd = { width: 16, height: 16, layers: [] };
+ * let psd = { width: 16, height: 16, layers: [ {} ] };
  * keypsd.gener(psd);
  * ```
  * 
@@ -203,14 +245,17 @@ namespace Gener {
  * keypsd.gener(psd);
  * ```
  * 
+ * - `name`: 字符串, 代表图层名称. 
+ * - `image`: `image`的长度必须是**图层**的`width * height * 4`. 如果未指定图层的`width`和`height`, 将缺省为`PSD`文件本身的`width`和`height`. 
+ * 
  * 对于图层对象, 除了`name`和`image`, 你还可以指定: 
  * 
- * - left, top: 用于定位图层, 一个有符号整数. 默认值是`0`. 
- * - width, height: 必须是正整数, 且`image`的大小必须是`width * height * 4`. 默认值是psd对象下的`width`和`height`. 
- * - visible: 布尔值, 表示是否隐藏图层(对应图层栏左侧的小眼睛按钮). 默认是 `true`. 
- * - blendMode: 字符串, 必须是CSS [`mix-blend-mode`](https://developer.mozilla.org/zh-CN/docs/Web/CSS/mix-blend-mode) 的16个属性中的一个. 
- * - opacity: `0 ~ 255`之间的整数之一(包括`0`和`255`), 代表图层的透明度. 默认是 `255`. 
- * - folder: 必须是"open"或者"close", 代表新图层组和关闭图层组. 就像XML一样, 一个图层组需要两个带有`folder`标志的图层来表示图层组的包含关系, 支持嵌套. 默认值是`undefined`. 
+ * - `left`和`top`: 用于定位图层, 一个有符号整数. 默认值是`0`. 
+ * - `width`和`height`: 必须是正整数, 且`image`的大小必须是`width * height * 4`. 默认值是psd对象下的`width`和`height`. 
+ * - `visible`: 布尔值, 表示是否隐藏图层(对应图层栏左侧的小眼睛按钮). 默认是 `true`. 
+ * - `blendMode`: 字符串, 必须是CSS [`mix-blend-mode`](https://developer.mozilla.org/zh-CN/docs/Web/CSS/mix-blend-mode) 的16个属性中的一个. 
+ * - `opacity`: `0 ~ 255`之间的整数之一(包括`0`和`255`), 代表图层的透明度. 默认是 `255`. 
+ * - `folder`: 必须是"open"或者"close", 代表新图层组和关闭图层组. 就像XML一样, 一个图层组需要两个带有`folder`标志的图层来表示图层组的包含关系, 支持嵌套. 默认值是`undefined`. 
  * 
  * @param psd psd对象
  */

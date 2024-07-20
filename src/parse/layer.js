@@ -47,6 +47,7 @@ function parseExtra(parser) {
             parser.skip(6);
             let raw = parseDescriptor(parser);
             let chars = parseEngineData(raw.EngineData);
+            // console.log(chars);
 
             // 跳过wrap段
             parser.skip(6);

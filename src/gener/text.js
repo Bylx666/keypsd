@@ -1,4 +1,7 @@
 /// 文本图层数据生成
+/// 
+/// Adobe并未为文本图层的数据提供标准文档, 以下生成流程仅供参考. 
+
 const { Gener } = require("../cursor");
 const { text: generTextDescriptor, textWrap: generWrapDescriptor } = require("./descriptor");
 
@@ -27,13 +30,8 @@ let DICTIONARY = {
                 ParagraphSheet: { DefaultStyleSheet: 0, Properties: {} },
                 Adjustments: { Axis: [ 1, 0, 1 ], XY: [ 0, 0 ] }
             },
-            RunArray: [
-                {
-                    ParagraphSheet: DEFAULT_SHEETSET[0],
-                    Adjustments: { Axis: [ 1, 0, 1 ], XY: [ 0, 0 ] }
-                }
-            ],
-            RunLengthArray: [0],
+            RunArray: [],
+            RunLengthArray: [],
             IsJoinable: 1
         },
         StyleRun: {
@@ -147,26 +145,36 @@ function encodeEngineData(data) {
 function serializeChars(chars) {
     let text = "";
     let len = 0;
-    let run = DICTIONARY.EngineDict.StyleRun;
-    run.RunArray = chars.map(({ char, size, color, font, underline, bold, italic })=> {
-        text += char==="\n"? "\r": char;
+    let line = [0];
+    let run = DICTIONARY.EngineDict.StyleRun, para = DICTIONARY.EngineDict.ParagraphRun;
+    chars.push({ char: "\n" });
+    run.RunArray = chars.map(({ char, size, color, underline, bold, italic })=> {
         len += 1;
-        color = [1, ...[].map.call(color, c=> c / 255)];
-        color.pop();
+        if (char === "\n") {
+            char = "\r";
+            line.push(len - line[line.length - 1]);
+        }
+        text += char;
+        color = [1, ...[].map.call(color? color: [0, 0, 0], c=> c / 255)].slice(0, 4);
         return { StyleSheet: { StyleSheetData: {
             Font: 0,
-            FontSize: size,
-            FauxBold: bold,
-            FauxItalic: italic,
-            Underline: underline,
+            FontSize: size? size: 16,
+            FauxBold: !!bold,
+            FauxItalic: !!italic,
+            Underline: !!underline,
             AutoLeading: true,
             Tracking: 0,
             AutoKerning: true,
             FillColor: { Type: 1, Values: color }
         } } };
     });
+    line.shift();
+    para.RunArray = new Array(line.length).fill({
+        ParagraphSheet: DEFAULT_SHEETSET[0],
+        Adjustments: { Axis: [ 1, 0, 1 ], XY: [ 0, 0 ] }
+    });
     run.RunLengthArray = new Array(len).fill(1);
-    DICTIONARY.EngineDict.ParagraphRun.RunLengthArray = [len];
+    para.RunLengthArray = line;
     run.IsJoinable = len;
     DICTIONARY.EngineDict.Editor.Text = text;
     return text;
@@ -174,6 +182,7 @@ function serializeChars(chars) {
 
 module.exports = (gener, chars, left, top)=> {
     let text = serializeChars(chars);
+    top += chars[0] && chars[0].size? chars[0].size: 16;
     gener.u16(1);
     [1,0,0,1, left, top].forEach(n=> gener.f64(n));
     gener.u16(50);
