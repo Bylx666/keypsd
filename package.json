@@ -1,6 +1,6 @@
 {
   "name": "keypsd",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "精致快速的PSD解析器和生成器",
   "main": "src/index",
   "scripts": {
