@@ -43,24 +43,25 @@ function encode(data) {
         // 编码不循环部分
         else {
             let lenIndex = gener.i;
+            count = 1;
             gener.go(1);
             gener.u8(a);
 
-            while (count < 127 && !parser.isEnded() && a !== b) {
+            while (count < 128 && !parser.isEnded() && a !== b) {
                 count ++;
                 gener.u8(b);
                 [ a, b ] = [b, parser.u8()];
             }
             
-            if (parser.isEnded() && b !== a) {
+            if (parser.isEnded() && b !== a && count !== 128) {
                 gener.u8(b);
-                gener.view.setInt8(lenIndex, count + 2);
+                gener.view.setInt8(lenIndex, count === 128? 127: count);
                 break;
             }
 
             gener.i --;
             parser.i --;
-            gener.view.setInt8(lenIndex, count);
+            gener.view.setInt8(lenIndex, count - 2);
         }
         parser.i --;
     }
