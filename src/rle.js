@@ -64,11 +64,6 @@ function encode(data) {
         }
         parser.i --;
     }
-    let check = decode(gener.export());
-    console.log(check.byteLength);
-    if (check.byteLength !== data.byteLength) {
-        console.log(check, data, new Int8Array(gener.export()))
-    }
     return gener.export();
 }
 
