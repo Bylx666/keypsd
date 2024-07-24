@@ -18,46 +18,8 @@ function decode(data, size) {
     return gener.export();
 }
 
-function _encode(parser, gener) {
-    while (!parser.isEnded()) {
-        let start = parser.u8();
-        let count = -1;
-        let char;
-
-        // 先假设是重复的, 并读取重复数量
-        while (!parser.isEnded() && (char = parser.u8()) === start && count > -127) 
-            --count;
-
-        // 确实是重复的话写入重复信息
-        if (count !== -1) {
-            gener.i8(count - 2);
-            gener.u8(start);
-            parser.i -= 1;
-        }
-        // 否则寻找不重复数量
-        else {
-            // 保留一位到最后写入重复次数
-            let startIndex = gener.i;
-            gener.go(1);
-            gener.u8(start);
-
-            while (count < 126 && !parser.isEnded()) {
-                let peek = parser.u8();
-                if (peek === char) {
-                    parser.i -= 1;
-                    break;
-                };
-                gener.u8(char);
-                char = peek;
-                ++count;
-            }
-            gener.view.setInt8(startIndex, count + 1);
-        }
-    }
-    return gener.export();
-}
-
-function _encode(parser, gener) {
+function encode(data) {
+    let parser = new Parser(data), gener = new Gener(data.byteLength);
     while (!parser.isEnded()) {
         let a = parser.u8();
         // 最后一个字节
@@ -71,11 +33,12 @@ function _encode(parser, gener) {
         let count = -1;
         // 编码循环部分
         if (a === b) {
-            while (!parser.isEnded() && (b = parser.u8()) === a && count > -127)
+            while (count > -128 && !parser.isEnded() && (b = parser.u8()) === a)
                 count --;
-            gener.i8(count);
+            if (count === -128) gener.i8(-127);
+            else gener.i8(count);
             gener.u8(a);
-            if (parser.isEnded() && b === a) break;
+            if (parser.isEnded() && b === a && count !== -128) break;
         }
         // 编码不循环部分
         else {
@@ -83,7 +46,7 @@ function _encode(parser, gener) {
             gener.go(1);
             gener.u8(a);
 
-            while (!parser.isEnded() && a !== b && count < 127) {
+            while (count < 127 && !parser.isEnded() && a !== b) {
                 count ++;
                 gener.u8(b);
                 [ a, b ] = [b, parser.u8()];
@@ -101,10 +64,13 @@ function _encode(parser, gener) {
         }
         parser.i --;
     }
+    let check = decode(gener.export());
+    console.log(check.byteLength);
+    if (check.byteLength !== data.byteLength) {
+        console.log(check, data, new Int8Array(gener.export()))
+    }
     return gener.export();
 }
-
-const encode = (data)=> _encode(new Parser(data), new Gener(data.byteLength));
 
 /**
  * 为n个0字节生成RLE数据
